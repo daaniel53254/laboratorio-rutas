@@ -70,7 +70,9 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 
 .table-wrap { overflow-x: auto; margin-top: 10px; }
 table { border-collapse: collapse; width: 100%; font-size: .85rem; }
-th, td { border: 1px solid var(--border); padding: 4px 6px; text-align: left; }
+th, td { border: 1px solid var(--border); padding: 4px 5px; text-align: left; }
+th abbr { text-decoration: none; }
+td:first-child { white-space: nowrap; }
 td button { padding: 2px 8px; }
 th { background: var(--bg); } td.best { font-weight: 700; }
 td.best::after { content: " ✓"; }

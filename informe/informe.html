@@ -19,7 +19,7 @@ code { background: #f3f5f8; padding: 0 2pt; font-size: 9pt; }
 Repositorio: <a href="https://github.com/daaniel53254/laboratorio-rutas">https://github.com/daaniel53254/laboratorio-rutas</a><br>Aplicación desplegada: <a href="https://laboratorio-rutas-daniel.netlify.app/">https://laboratorio-rutas-daniel.netlify.app/</a></div>
 
 <h2>1. Resumen</h2>
-<p>Aplicación web con un tablero editable de 20 × 20 en el que se define un inicio, una o varias metas, obstáculos y baldosas con coste. Ejecuta BFS, DFS, búsqueda de coste uniforme (UCS) y A*, muestra la exploración celda a celda con pausa, paso a paso y control de velocidad, y compara los cuatro algoritmos sobre el mismo mapa. Incluye cuatro escenarios reproducibles y 13 pruebas automáticas que se ejecutan con <code>node tests/run-tests.mjs</code>. Funciona en localhost (Live Server o <code>npx serve</code>) y en Netlify.</p>
+<p>Aplicación web con un tablero editable de 20 × 20 en el que se define un inicio, una o varias metas, obstáculos y baldosas con coste. Ejecuta BFS, DFS, búsqueda de coste uniforme (UCS), A* y, como mejora, búsqueda bidireccional, muestra la exploración celda a celda con pausa, paso a paso y control de velocidad, y compara los cinco algoritmos sobre el mismo mapa. Incluye cuatro escenarios reproducibles y 18 pruebas automáticas que se ejecutan con <code>node tests/run-tests.mjs</code>. Funciona en localhost (Live Server o <code>npx serve</code>) y en Netlify.</p>
 
 <h2>2. Elección de lenguaje y herramientas (CE a–d)</h2>
 <table><tr><th>Decisión</th><th>Elección</th><th>Motivo</th><th>Alternativa descartada</th></tr>
@@ -41,10 +41,10 @@ Repositorio: <a href="https://github.com/daaniel53254/laboratorio-rutas">https:/
 <tr><td><code>index.html</code></td><td>Estructura y controles.</td></tr>
 <tr><td><code>css/style.css</code></td><td>Estilos y temas.</td></tr>
 <tr><td><code>js/board.js</code></td><td>Modelo del tablero y reglas de edición (<code>createBoard</code>, <code>place</code>, <code>loadScenario</code>).</td></tr>
-<tr><td><code>js/algorithms.js</code></td><td><code>bfs</code>, <code>dfs</code>, <code>ucs</code>, <code>astar</code>, cola de prioridad, heurística y <code>validate</code>. No toca el DOM.</td></tr>
+<tr><td><code>js/algorithms.js</code></td><td><code>bfs</code>, <code>dfs</code>, <code>ucs</code>, <code>astar</code>, <code>bidirectional</code>, cola de prioridad, heurística y <code>validate</code>. No toca el DOM.</td></tr>
 <tr><td><code>js/scenarios.js</code></td><td>Cuatro mapas de texto reproducibles.</td></tr>
 <tr><td><code>js/app.js</code></td><td>Interfaz: pinta el tablero, gestiona eventos, animación, métricas y comparación.</td></tr>
-<tr><td><code>tests/run-tests.mjs</code></td><td>13 pruebas de algoritmos y tablero.</td></tr>
+<tr><td><code>tests/run-tests.mjs</code></td><td>18 pruebas de algoritmos y tablero.</td></tr>
 <tr><td><code>netlify.toml</code></td><td>Publicación de la carpeta raíz sin build.</td></tr></table>
 
 <h3>Estructura de datos del mapa</h3>
@@ -65,7 +65,7 @@ Ejecución: botón Ejecutar -> validate(board) (falta inicio o meta -> mensaje)
           -> ALGORITMOS[algo](board) -> {found, path, explored, steps, cost}
           -> tick(): revela una celda explorada cada N ms (pausa / paso / velocidad)
           -> finish(): pinta la ruta y muestra pasos, coste y exploradas
-Comparar: ejecuta los cuatro sobre el mismo board -> tabla -> "Ver" repinta un recorrido</pre>
+Comparar: ejecuta los cinco sobre el mismo board -> tabla -> "Ver" repinta un recorrido</pre>
 <p>Los algoritmos se ejecutan completos de una vez y devuelven la lista ordenada de celdas exploradas; la animación solo reproduce esa lista. Esto separa el cálculo de la visualización y permite probar los algoritmos sin navegador.</p>
 
 <h2 class="pb">4. Los algoritmos (CE e)</h2>
@@ -83,28 +83,33 @@ Comparar: ejecuta los cuatro sobre el mismo board -> tabla -> "Ver" repinta un r
 <h3>Heurística de A*</h3>
 <p><code>h(n) = mínimo sobre las metas de (distancia Manhattan(n, meta) + penalización de esa meta)</code>. Es admisible porque cada paso cuesta al menos 1 y Manhattan es el mínimo de pasos posible sin diagonales, así que nunca sobreestima. Es consistente (<code>h(n) ≤ coste(n→m) + h(m)</code>), por lo que cerrar un nodo al sacarlo garantiza que su g es óptimo. Con h = 0 el algoritmo es UCS. En caso de empate en f, se prefiere el mayor g, lo que reduce las exploraciones.</p>
 
+<h3>Búsqueda bidireccional (mejora)</h3>
+<p>Ver sección 8. Es un BFS doble: usa dos colas FIFO (una desde el inicio y otra desde todas las metas), marca como visitadas las celdas al encolarlas, reconstruye la ruta uniendo los dos <code>parent</code> en el punto de encuentro, e ignora pesos y penalizaciones como BFS.</p>
 <h3>Casos límite</h3>
 <p>Sin inicio o sin meta, <code>validate</code> devuelve el mensaje y no se ejecuta nada. Si la cola o pila se vacía sin llegar a una meta, se informa «Sin solución» con las celdas exploradas.</p>
 
 <h2 class="pb">5. Escenarios de desafío y comparación</h2>
 <p>Cada escenario es un mapa de texto en <code>js/scenarios.js</code> (# muro, S inicio, G meta, 2-9 peso), por lo que se carga siempre igual.</p>
-<table><tr><th>Escenario</th><th>Qué pone a prueba</th><th>BFS<br><small>pasos / coste / expl.</small></th><th>DFS</th><th>UCS</th><th>A*</th><th>Conclusión</th></tr>
-<tr><td>1 · Menos pasos</td><td>Caminos de distinta longitud, sin pesos</td><td>31 / 31 / 341</td><td>267 / 267 / 270</td><td>31 / 31 / 343</td><td>31 / 31 / 32</td><td>BFS, UCS y A* dan el mínimo de pasos. DFS encuentra ruta pero 8,6 veces más larga. A* explora 32 celdas frente a 343.</td></tr>
-<tr><td>2 · Atajo caro</td><td>Ruta corta cara frente a rodeo barato</td><td>17 / 113 / 246</td><td>57 / 57 / 58</td><td>21 / 21 / 316</td><td>21 / 21 / 28</td><td>BFS minimiza pasos y paga 113. UCS y A* dan 21, cinco veces menos.</td></tr>
-<tr><td>3 · Varias metas</td><td>Meta cercana con penalización 30 frente a meta lejana barata</td><td>3 / 33 / 17</td><td>57 / 57 / 58</td><td>21 / 21 / 313</td><td>21 / 21 / 41</td><td>BFS va a la cercana (3 pasos, coste 33). UCS y A* eligen la lejana por coste total (21).</td></tr>
-<tr><td>4 · Sin solución</td><td>Barrera completa</td><td>sin ruta / 180</td><td>sin ruta / 180</td><td>sin ruta / 180</td><td>sin ruta / 180</td><td>Los cuatro terminan e informan de que no existe ruta, tras explorar toda la zona alcanzable (180 celdas).</td></tr></table>
+<table><tr><th>Escenario</th><th>Qué pone a prueba</th><th>BFS<br><small>pasos / coste / expl.</small></th><th>DFS</th><th>UCS</th><th>A*</th><th>Bidir.</th><th>Conclusión</th></tr>
+<tr><td>1 · Menos pasos</td><td>Caminos de distinta longitud, sin pesos</td><td>31 / 31 / 341</td><td>267 / 267 / 270</td><td>31 / 31 / 343</td><td>31 / 31 / 32</td><td>31 / 31 / 276</td><td>BFS, UCS, A* y bidireccional dan el mínimo de pasos. DFS encuentra ruta pero 8,6 veces más larga. A* explora 32 celdas frente a 343.</td></tr>
+<tr><td>2 · Atajo caro</td><td>Ruta corta cara frente a rodeo barato</td><td>17 / 113 / 246</td><td>57 / 57 / 58</td><td>21 / 21 / 316</td><td>21 / 21 / 28</td><td>17 / 113 / 155</td><td>BFS y la bidireccional minimizan pasos y pagan 113. UCS y A* dan 21, cinco veces menos.</td></tr>
+<tr><td>3 · Varias metas</td><td>Meta cercana con penalización 30 frente a meta lejana barata</td><td>3 / 33 / 17</td><td>57 / 57 / 58</td><td>21 / 21 / 313</td><td>21 / 21 / 41</td><td>3 / 33 / 7</td><td>BFS y la bidireccional van a la cercana (3 pasos, coste 33). UCS y A* eligen la lejana por coste total (21).</td></tr>
+<tr><td>4 · Sin solución</td><td>Barrera completa</td><td>sin ruta / 180</td><td>sin ruta / 180</td><td>sin ruta / 180</td><td>sin ruta / 180</td><td>sin ruta / 206</td><td>Los cinco terminan e informan de que no existe ruta. Los cuatro primeros exploran toda la zona alcanzable (180 celdas); la bidireccional explora 206 porque agota también un tramo del lado de las metas.</td></tr></table>
 <p>Nota sobre DFS: en el escenario 2 su coste (57) es menor que el de BFS (113) solo porque su orden de exploración esquiva el pasillo caro, no porque optimice nada. DFS devuelve la primera ruta que encuentra, así que no garantiza ni pasos ni coste mínimos.</p>
 
-<figure><img src="img/escenario1.png" style="width:88%"><figcaption>Escenario 1 con A*: 31 pasos, coste 31, 32 celdas exploradas. La tabla compara los cuatro algoritmos.</figcaption></figure>
+<figure><img src="img/escenario1.png" style="width:88%"><figcaption>Escenario 1 con A*: 31 pasos, coste 31, 32 celdas exploradas. La tabla compara los cinco algoritmos.</figcaption></figure>
 <figure><img src="img/escenario1_dfs.png" style="width:75%"><figcaption>Escenario 1 con DFS: 267 pasos. Encuentra ruta, pero muy larga.</figcaption></figure>
 <figure><img src="img/escenario2.png" style="width:88%"><figcaption>Escenario 2 con A*: rodea el pasillo de baldosas de coste 9 (coste 21).</figcaption></figure>
 <figure><img src="img/escenario2_bfs.png" style="width:75%"><figcaption>Escenario 2 con BFS: cruza el pasillo por ser lo más corto en pasos (17 pasos, coste 113).</figcaption></figure>
 <figure><img src="img/escenario3.png" style="width:88%"><figcaption>Escenario 3 con A*: ignora la meta cercana con penalización (G+30) y va a la lejana (coste 21).</figcaption></figure>
 <figure><img src="img/escenario3_bfs.png" style="width:75%"><figcaption>Escenario 3 con BFS: elige la meta cercana (3 pasos, coste 33).</figcaption></figure>
+<figure><img src="img/escenario1_bidir.png" style="width:88%"><figcaption>Escenario 1 con la bidireccional: 31 pasos (los mismos que BFS) explorando 276 celdas en lugar de 341.</figcaption></figure>
+<figure><img src="img/escenario3_bidir.png" style="width:75%"><figcaption>Escenario 3 con la bidireccional: elige la meta cercana por pasos y solo explora 7 celdas (BFS: 17).</figcaption></figure>
 <figure><img src="img/escenario4.png" style="width:75%"><figcaption>Escenario 4 con BFS: sin solución tras explorar 180 celdas.</figcaption></figure>
+<figure><img src="img/escenario4_bidir.png" style="width:75%"><figcaption>Escenario 4 con la bidireccional: sin solución tras explorar 206 celdas.</figcaption></figure>
 
 <h2 class="pb">6. Casos de prueba</h2>
-<p>Cada caso indica escenario, resultado esperado, resultado obtenido y evidencia. Los resultados «obtenidos» de la columna de interfaz se leyeron de la propia aplicación durante la prueba; los automáticos están en <code>tests/run-tests.mjs</code> (13 pruebas superadas).</p>
+<p>Cada caso indica escenario, resultado esperado, resultado obtenido y evidencia. Los resultados «obtenidos» de la columna de interfaz se leyeron de la propia aplicación durante la prueba; los automáticos están en <code>tests/run-tests.mjs</code> (18 pruebas superadas).</p>
 <table><tr><th>Caso</th><th>Entrada / escenario</th><th>Esperado</th><th>Obtenido</th><th>Evidencia</th></tr>
 <tr><td>Ruta simple</td><td>Inicio (2,2), meta (10,2), sin obstáculos, BFS</td><td>8 pasos, coste 8</td><td>8 pasos, coste 8</td><td>Fig. T1; prueba «ruta simple»</td></tr>
 <tr><td>Sin inicio</td><td>Solo una meta, A*</td><td>Mensaje «Falta el inicio», nada se ejecuta</td><td>«Falta el inicio.»</td><td>Fig. T2a</td></tr>
@@ -112,8 +117,9 @@ Comparar: ejecuta los cuatro sobre el mismo board -> tabla -> "Ver" repinta un r
 <tr><td>Varias metas</td><td>Escenario 3</td><td>BFS 3 pasos/coste 33; UCS y A* coste 21 a la meta lejana</td><td>BFS 3/33; A* 21/21</td><td>Sección 5; prueba «varias metas»</td></tr>
 <tr><td>Pesos</td><td>Escenario 2</td><td>BFS coste 113; UCS y A* coste 21</td><td>BFS 113; A* 21</td><td>Sección 5; pruebas «pesos» y «escenario 2»</td></tr>
 <tr><td>Obstáculos</td><td>Inicio (3,9), meta (15,9), muro vertical en x=9 de y=4 a y=14, BFS</td><td>Rodea el muro: 12 pasos directos + 12 de desvío = 24</td><td>24 pasos, coste 24</td><td>Fig. T5; prueba «obstáculos»</td></tr>
-<tr><td>Sin solución</td><td>Escenario 4, los cuatro algoritmos</td><td>Los cuatro informan sin ruta</td><td>«BFS: Sin solución: no existe ruta a ninguna meta.» (180 exploradas)</td><td>Fig. escenario 4; prueba «mapa sin solución»</td></tr>
+<tr><td>Sin solución</td><td>Escenario 4, BFS (y los otros cuatro en las pruebas automáticas)</td><td>Todos informan sin ruta</td><td>«BFS: Sin solución: no existe ruta a ninguna meta.» (180 exploradas)</td><td>Fig. escenario 4; prueba «mapa sin solución»</td></tr>
 <tr><td>Edición tras ejecutar</td><td>Tras ejecutar BFS en el mapa de obstáculos, se añade un muro en (11,9)</td><td>Se descarta el resultado anterior; al ejecutar de nuevo se recalcula</td><td>Estado: «Tablero editado: se descartó el resultado anterior.», exploradas 0. Nueva ejecución: 24 pasos, 361 exploradas</td><td>Fig. T7; prueba «edición tras ejecutar»</td></tr>
+<tr><td>Bidireccional</td><td>Escenarios 1, 3 y 4, mapa abierto, varias metas y 5000 mapas aleatorios</td><td>Mismos pasos que BFS, sin ruta en el 4, menos celdas exploradas que BFS en mapa abierto</td><td>Cumple: 31 pasos en el escenario 1 y 3 pasos en el 3; sin ruta en el 4; en 4980 mapas aleatorios, 0 diferencias de pasos con BFS y rutas válidas</td><td>Fig. escenarios 1, 3 y 4 con bidireccional; pruebas «bidireccional» (5)</td></tr>
 <tr><td>Coherencia del tablero</td><td>Poner muro sobre meta, inicio sobre muro, etc.</td><td>Una celda nunca tiene dos tipos</td><td>Correcto</td><td>Prueba «coherencia»</td></tr>
 <tr><td>UCS = A* en coste</td><td>4 escenarios y 200 mapas aleatorios con pesos y penalizaciones</td><td>Mismo coste en todos</td><td>Coinciden en todos</td><td>Prueba «UCS y A* coinciden»</td></tr></table>
 
@@ -132,22 +138,34 @@ Comparar: ejecuta los cuatro sobre el mismo board -> tabla -> "Ver" repinta un r
 <li><b>Pruebas antes de la interfaz.</b> Escribí las pruebas para validar la lógica sin navegador.</li>
 <li><b>Interfaz (<code>app.js</code>, <code>index.html</code>, <code>style.css</code>).</b> Tablero con botones (accesible por teclado), herramientas, animación con pausa, paso y velocidad, métricas y tabla comparativa.</li>
 <li><b>Despliegue.</b> Repositorio en GitHub y sitio en Netlify sin build.</li>
+<li><b>Mejora extra.</b> Búsqueda bidireccional, implementada con ayuda de Claude Code en VS Code, revisada y probada (sección 8).</li>
 </ol>
 <h3>Dificultades y correcciones</h3>
 <table><tr><th>Problema</th><th>Cómo lo detecté</th><th>Corrección</th></tr>
 <tr><td>Una de mis pruebas esperaba 8 pasos al rodear un muro de 5 celdas.</td><td>Falló la prueba automática.</td><td>Comprobé a mano el camino: son 10 (5 para rodear + 5 de vuelta). El error estaba en la prueba, no en el algoritmo.</td></tr>
 <tr><td>En el escenario 1, DFS daba los mismos 38 pasos que BFS por casualidad, y no demostraba nada.</td><td>La tabla de resultados de las pruebas.</td><td>Recoloqué inicio y meta para que el orden de vecinos de DFS le desvíe: ahora DFS da 267 pasos frente a 31.</td></tr>
-<tr><td>La columna «Algoritmo» de la tabla comparativa aparecía cortada.</td><td>Al revisar una captura de pantalla.</td><td>Reduje tamaño y márgenes de la tabla y ensanché el panel.</td></tr>
+<tr><td>La columna «Algoritmo» de la tabla comparativa aparecía cortada, y volvió a ocurrir al añadir «Bidireccional», un nombre más largo.</td><td>Al revisar capturas de pantalla.</td><td>Reduje tamaño y márgenes, acorté la cabecera «Explorada» a «Explor.» y evité el salto de línea en la primera columna. Comprobé que ya no hay desbordamiento a 1280 y 390 píxeles de ancho.</td></tr>
 <tr><td>Python no estaba instalado en mi equipo, así que <code>python3 -m http.server</code> falló.</td><td>Mensaje del terminal.</td><td>Usé la extensión Live Server de VS Code.</td></tr>
 <tr><td>Comando <code>git remote add origin</code> sin URL.</td><td>Error de uso del comando.</td><td>Ejecutarlo con la URL en la misma línea.</td></tr>
+<tr><td>Claude Code no pudo ejecutar las pruebas porque Node.js no estaba instalado.</td><td>Mensaje de Claude Code: no localizaba <code>node</code>.</td><td>Instalé Node.js LTS, reinicié VS Code y las pruebas pasaron (13, luego 18).</td></tr>
 <tr><td>Netlify no encontraba el repositorio.</td><td>La lista de repositorios aparecía vacía.</td><td>Conceder a la app de Netlify acceso al repositorio en la configuración de GitHub.</td></tr></table>
 
-<h2>8. Mejoras implementadas</h2>
-<div class="todo">No se ha implementado ninguna mejora adicional (búsqueda bidireccional o simulación de ciudad). La rúbrica permite el 9,5 sin este apartado. Si se añade, se documentará aquí con su caso de uso, límites, prueba y efecto medible.</div>
-
+<h2>8. Mejora implementada: búsqueda bidireccional</h2>
+<p><b>Qué es.</b> Dos BFS a la vez: uno sale del inicio y otro sale de todas las metas simultáneamente. Se ejecutan por capas completas y, en cada paso, se expande la frontera más pequeña. Cuando una capa toca celdas ya alcanzadas por el otro lado, se elige el punto de encuentro con menos pasos totales y se unen los dos trozos de ruta. Como el segundo BFS parte de todas las metas, con varias metas la ruta acaba en la más cercana por pasos, sin una búsqueda previa para elegirla.</p>
+<p><b>Por qué ayuda.</b> Un BFS explora un círculo cuyo radio es la distancia total; dos BFS exploran dos círculos de la mitad de radio, con menos área en total. Es la mejora habitual de BFS cuando se conoce la meta.</p>
+<p><b>Caso de uso.</b> Encontrar la ruta con menos pasos entre dos puntos concretos, sin pesos, explorando menos mapa.</p>
+<table><tr><th>Escenario</th><th>BFS (exploradas)</th><th>Bidireccional (exploradas)</th><th>Pasos BFS / bidir.</th></tr>
+<tr><td>1 · Menos pasos</td><td>341</td><td>276</td><td>31 / 31</td></tr>
+<tr><td>2 · Atajo caro</td><td>246</td><td>155</td><td>17 / 17 (coste 113 en ambos)</td></tr>
+<tr><td>3 · Varias metas</td><td>17</td><td>7</td><td>3 / 3</td></tr>
+<tr><td>4 · Sin solución</td><td>180</td><td>206</td><td>sin ruta / sin ruta</td></tr></table>
+<p><b>Efecto medible.</b> Explora menos celdas que BFS en los escenarios 1, 2 y 3 (entre un 19 % y un 59 % menos) con los mismos pasos. En una prueba con 4980 mapas aleatorios (muros del 0 al 45 %, de una a tres metas), dio siempre los mismos pasos que BFS, con rutas válidas, y exploró menos celdas en 4482 mapas y más en 301; en el resto, las mismas.</p>
+<p><b>Pruebas.</b> Cinco pruebas automáticas: mismos pasos que BFS en el escenario 1, sin ruta en el 4, menos celdas exploradas que BFS en un mapa abierto, varias metas (usa la más cercana por pasos aunque tenga penalización) y mismos pasos que BFS en 300 mapas aleatorios.</p>
+<p><b>Límites.</b> (1) Ignora pesos y penalizaciones: solo es óptima en número de pasos, no en coste (en el escenario 2 paga 113 frente a 21 de UCS y A*). (2) En mapas sin solución puede explorar más que BFS (206 frente a 180 en el escenario 4), porque agota también un tramo del lado de las metas. (3) Necesita que el movimiento sea reversible, algo que se cumple en este tablero pero no siempre en otros problemas.</p>
 <h2>9. Limitaciones</h2>
 <ul>
 <li>Sin movimiento diagonal.</li>
+<li>La bidireccional ignora pesos y penalizaciones; solo es óptima en pasos.</li>
 <li>La cola de prioridad y los mapas están pensados para 20 × 20, no se han medido tableros mayores.</li>
 <li>La animación reproduce el recorrido ya calculado; no ejecuta el algoritmo paso a paso internamente.</li>
 <li>Los pesos están limitados a 2-9 y las penalizaciones a números enteros.</li>
@@ -156,12 +174,13 @@ Comparar: ejecuta los cuatro sobre el mismo board -> tabla -> "Ver" repinta un r
 </ul>
 
 <h2>10. Uso de asistentes de código IA</h2>
-<p><b>Herramienta:</b> Claude (Anthropic), en el asistente de código con acceso a un entorno de ejecución. No se incluyeron claves, contraseñas ni datos personales en las consultas.</p>
+<p><b>Herramienta:</b> Claude (Anthropic): en la web/aplicación para la versión inicial y el informe, y Claude Code en VS Code para la mejora bidireccional. No se incluyeron claves, contraseñas ni datos personales en las consultas.</p>
 <table><tr><th>Consulta representativa</th><th>Qué propuso</th><th>Qué acepté o cambié</th><th>Cómo lo verifiqué</th></tr>
 <tr><td>«Ayúdame con este trabajo» (enunciado adjunto) y «necesito hacerlo en menos tiempo, tengo 2-3 h»</td><td>Un plan en 10 fases con React + TypeScript + Vite y canvas.</td><td>Cambié a HTML + JavaScript sin framework por el tiempo disponible. Descarté el canvas por accesibilidad.</td><td>Comprobé que el proyecto no necesita instalación y funciona en Live Server y Netlify.</td></tr>
-<tr><td>Implementación de BFS, DFS, UCS y A*</td><td>Código de los cuatro algoritmos, montículo binario y heurística Manhattan.</td><td>Acepté la estructura. Revisé el tratamiento de la penalización de meta (entrada «final») y la consistencia de la heurística.</td><td>13 pruebas automáticas, incluida la comparación UCS = A* en 200 mapas aleatorios.</td></tr>
+<tr><td>Implementación de BFS, DFS, UCS y A*</td><td>Código de los cuatro algoritmos, montículo binario y heurística Manhattan.</td><td>Acepté la estructura. Revisé el tratamiento de la penalización de meta (entrada «final») y la consistencia de la heurística.</td><td>18 pruebas automáticas, incluida la comparación UCS = A* en 200 mapas aleatorios.</td></tr>
 <tr><td>Diseño de los cuatro escenarios</td><td>Cuatro mapas de texto.</td><td>Se rediseñó el escenario 1 porque DFS coincidía con BFS por casualidad.</td><td>Tabla de resultados por escenario y pruebas específicas.</td></tr>
 <tr><td>Interfaz y accesibilidad</td><td>Tablero de botones con navegación por flechas, roles ARIA y tema claro/oscuro.</td><td>Aceptado. Se corrigió la tabla comparativa cortada.</td><td>Capturas en navegador y prueba de teclado.</td></tr>
+<tr><td>«Añade búsqueda bidireccional» (con plan previo de 3 líneas)</td><td>Un plan con dos BFS por capas completas, uno desde el inicio y otro desde todas las metas, y una implementación con 5 pruebas y documentación en el README.</td><td>Acepté el plan tras revisarlo. Comprobé que expande la frontera más pequeña en lugar de alternar capas (variante correcta) y que se añadió al final de <code>ALGORITHMS</code> para no romper la nota de la tabla.</td><td>18 pruebas; prueba adicional con 5000 mapas aleatorios frente a BFS (0 diferencias); capturas de los escenarios.</td></tr>
 <tr><td>Errores de Git y Netlify</td><td>Explicación del fallo y comandos correctos.</td><td>Aplicados tal cual.</td><td>El repositorio y el despliegue funcionan.</td></tr></table>
 <div class="todo">Antes de entregar: revisa este registro y ajústalo a lo que realmente hiciste. Lee <code>js/algorithms.js</code> completo, porque la rúbrica pide explicar y modificar el código individualmente en la defensa.</div>
 
