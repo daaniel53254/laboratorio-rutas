@@ -1,0 +1,84 @@
+{
+ "escenario1": {
+  "estado": "A*: ruta encontrada en 31 pasos con coste 31.",
+  "exploradas": "32",
+  "pasos": "31",
+  "coste": "31",
+  "nota": "✓ = mejor valor de la columna. UCS y A* coinciden en coste (31 y 31); A* explora 32 celdas frente a 343 de UCS."
+ },
+ "escenario1_dfs": {
+  "estado": "DFS: ruta encontrada en 267 pasos con coste 267.",
+  "exploradas": "270",
+  "pasos": "267",
+  "coste": "267"
+ },
+ "escenario2": {
+  "estado": "A*: ruta encontrada en 21 pasos con coste 21.",
+  "exploradas": "28",
+  "pasos": "21",
+  "coste": "21",
+  "nota": "✓ = mejor valor de la columna. UCS y A* coinciden en coste (21 y 21); A* explora 28 celdas frente a 316 de UCS."
+ },
+ "escenario2_bfs": {
+  "estado": "BFS: ruta encontrada en 17 pasos con coste 113.",
+  "exploradas": "246",
+  "pasos": "17",
+  "coste": "113"
+ },
+ "escenario3": {
+  "estado": "A*: ruta encontrada en 21 pasos con coste 21.",
+  "exploradas": "41",
+  "pasos": "21",
+  "coste": "21",
+  "nota": "✓ = mejor valor de la columna. UCS y A* coinciden en coste (21 y 21); A* explora 41 celdas frente a 313 de UCS."
+ },
+ "escenario3_bfs": {
+  "estado": "BFS: ruta encontrada en 3 pasos con coste 33.",
+  "exploradas": "17",
+  "pasos": "3",
+  "coste": "33"
+ },
+ "escenario4": {
+  "estado": "BFS: Sin solución: no existe ruta a ninguna meta.",
+  "exploradas": "180",
+  "pasos": "–",
+  "coste": "–",
+  "nota": ""
+ },
+ "t1": {
+  "estado": "BFS: ruta encontrada en 8 pasos con coste 8.",
+  "exploradas": "69",
+  "pasos": "8",
+  "coste": "8"
+ },
+ "t2a": {
+  "estado": "Falta el inicio.",
+  "exploradas": "0",
+  "pasos": "–",
+  "coste": "–"
+ },
+ "t2b": {
+  "estado": "Falta al menos una meta.",
+  "exploradas": "0",
+  "pasos": "–",
+  "coste": "–"
+ },
+ "t5": {
+  "estado": "BFS: ruta encontrada en 24 pasos con coste 24.",
+  "exploradas": "362",
+  "pasos": "24",
+  "coste": "24"
+ },
+ "t7": {
+  "estado": "Tablero editado: se descartó el resultado anterior.",
+  "exploradas": "0",
+  "pasos": "–",
+  "coste": "–"
+ },
+ "t7_rerun": {
+  "estado": "BFS: ruta encontrada en 24 pasos con coste 24.",
+  "exploradas": "361",
+  "pasos": "24",
+  "coste": "24"
+ }
+}
