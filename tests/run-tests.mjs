@@ -1,10 +1,10 @@
 // Pruebas de los algoritmos y del tablero. Ejecutar: node tests/run-tests.mjs
 import assert from 'node:assert/strict';
 import { createBoard, place, loadScenario } from '../js/board.js';
-import { bfs, dfs, ucs, astar } from '../js/algorithms.js';
+import { bfs, dfs, ucs, astar, bidirectional } from '../js/algorithms.js';
 import { SCENARIOS } from '../js/scenarios.js';
 
-const ALGOS = { BFS: bfs, DFS: dfs, UCS: ucs, 'A*': astar };
+const ALGOS = { BFS: bfs, DFS: dfs, UCS: ucs, 'A*': astar, Bidireccional: bidirectional };
 const S = 20, idx = (x, y) => y * S + x;
 let passed = 0;
 const rows = [];
@@ -24,7 +24,7 @@ test('mapas de escenarios: 20 filas de 20 columnas', () => {
   }
 });
 
-test('ruta simple: fila recta, 5 pasos y coste 5 en los cuatro', () => {
+test('ruta simple: fila recta, 5 pasos y coste 5 en todos', () => {
   const b = createBoard(S);
   place(b, 'start', idx(0, 0)); place(b, 'goal', idx(5, 0), { pen: 0 });
   for (const [n, r] of Object.entries(runAll(b))) {
@@ -74,7 +74,7 @@ test('penalizacion de meta cuenta en el coste total', () => {
   assert.equal(ucs(b).cost, 9);
 });
 
-test('mapa sin solucion: los cuatro terminan con found=false', () => {
+test('mapa sin solucion: todos terminan con found=false', () => {
   const r = runAll(scenario('s4'));
   for (const [n, x] of Object.entries(r)) { assert.equal(x.found, false, n); assert.ok(x.reason); }
 });
@@ -126,6 +126,56 @@ test('UCS y A* coinciden en coste optimo en todos los escenarios y en mapas con 
     const u = ucs(b), a = astar(b);
     assert.equal(u.found, a.found); if (u.found) assert.equal(u.cost, a.cost, `aleatorio ${t}`);
     assert.ok(a.explored.length <= u.explored.length + 1 || true);
+  }
+});
+
+test('bidireccional: mismos pasos minimos que BFS en el escenario 1', () => {
+  const b = scenario('s1'), r = bidirectional(b), ref = bfs(b);
+  assert.ok(r.found); assert.equal(r.steps, ref.steps); assert.equal(r.steps, 31);
+  assert.equal(r.path[0], b.start); assert.ok(b.goals.has(r.goal)); assert.equal(r.path.at(-1), r.goal);
+  assert.equal(r.cost, ref.cost);
+  for (let k = 1; k < r.path.length; k++) {
+    const p = r.path[k], q = r.path[k - 1];
+    assert.equal(Math.abs(p % S - q % S) + Math.abs(((p / S) | 0) - ((q / S) | 0)), 1);
+    assert.ok(!b.wall[p]);
+  }
+});
+
+test('bidireccional: sin ruta en el escenario 4', () => {
+  const r = bidirectional(scenario('s4'));
+  assert.equal(r.found, false); assert.ok(r.reason); assert.deepEqual(r.path, []);
+});
+
+test('bidireccional: en un mapa abierto explora menos celdas que BFS', () => {
+  const b = createBoard(S);
+  place(b, 'start', idx(4, 10)); place(b, 'goal', idx(15, 10), { pen: 0 });
+  const r = bidirectional(b), ref = bfs(b);
+  assert.equal(r.steps, ref.steps); assert.equal(r.steps, 11);
+  assert.ok(r.explored.length < ref.explored.length, `${r.explored.length} vs ${ref.explored.length}`);
+});
+
+test('bidireccional: con varias metas usa la mas cercana por pasos e ignora pesos y penalizaciones', () => {
+  const b = scenario('s3'), r = bidirectional(b), ref = bfs(b);
+  assert.equal(r.steps, ref.steps); assert.equal(r.goal, ref.goal);
+  const c = createBoard(S);
+  place(c, 'start', idx(0, 0)); place(c, 'goal', idx(2, 0), { pen: 50 }); place(c, 'goal', idx(0, 5), { pen: 0 });
+  place(c, 'weight', idx(1, 0), { weight: 9 });
+  const x = bidirectional(c);
+  assert.equal(x.goal, idx(2, 0)); assert.equal(x.steps, 2); assert.equal(x.cost, 60);
+});
+
+test('bidireccional coincide en pasos con BFS en mapas aleatorios', () => {
+  let seed = 11; const rnd = () => (seed = (seed * 1664525 + 1013904223) % 4294967296) / 4294967296;
+  const cell = () => idx(Math.floor(rnd() * S), Math.floor(rnd() * S));
+  for (let t = 0; t < 300; t++) {
+    const b = createBoard(S);
+    for (let i = 0; i < S * S; i++) if (rnd() < 0.3) place(b, 'wall', i);
+    place(b, 'start', cell()); place(b, 'goal', cell());
+    if (rnd() < 0.5) place(b, 'goal', cell());
+    if (b.start < 0 || !b.goals.size) continue;
+    const r = bidirectional(b), ref = bfs(b);
+    assert.equal(r.found, ref.found, `aleatorio ${t}`);
+    if (r.found) assert.equal(r.steps, ref.steps, `aleatorio ${t}`);
   }
 });
 

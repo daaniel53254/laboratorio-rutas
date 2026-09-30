@@ -151,5 +151,54 @@ function bestFirst(b, name, useH) {
 export const ucs = (b) => bestFirst(b, 'UCS', false);
 export const astar = (b) => bestFirst(b, 'A*', true);
 
-export const ALGORITHMS = { bfs, dfs, ucs, astar };
-export const ALGO_NAMES = { bfs: 'BFS', dfs: 'DFS', ucs: 'UCS', astar: 'A*' };
+// Bidireccional: dos BFS por capas completas, uno desde el inicio y otro desde todas las metas a la vez, hasta que se tocan.
+// Como el segundo BFS parte de todas las metas, la ruta hallada va a la meta mas cercana por pasos.
+// Limites: ignora pesos y penalizaciones (como BFS); solo es optimo en numero de pasos, no en coste.
+export function bidirectional(b) {
+  const name = 'Bidireccional', err = validate(b);
+  if (err) return fail(name, [], err);
+  const n = b.size * b.size;
+  const parF = new Int32Array(n).fill(-2), parB = new Int32Array(n).fill(-2);
+  const distF = new Int32Array(n), distB = new Int32Array(n);
+  const explored = [];
+  parF[b.start] = -1;
+  if (b.goals.has(b.start)) { explored.push(b.start); return finish([b.start]); }
+  let layerF = [b.start], layerB = [];
+  for (const g of b.goals.keys()) { parB[g] = -1; layerB.push(g); }
+
+  function finish(path) {
+    const goal = path[path.length - 1];
+    return { name, found: true, path, explored, steps: path.length - 1, cost: pathCost(b, path), goal };
+  }
+  // Expande una capa completa. Devuelve el mejor punto de encuentro { a, c } (a lo alcanzo F, c lo alcanzo B) o null.
+  function expand(layer, own, dOwn, other, dOther, fromStart) {
+    const next = []; let best = null, bestLen = Infinity;
+    for (const u of layer) {
+      explored.push(u);
+      for (const v of neighbors(b, u)) {
+        if (other[v] !== -2) {
+          const len = dOwn[u] + 1 + dOther[v];
+          if (len < bestLen) { bestLen = len; best = fromStart ? { a: u, c: v } : { a: v, c: u }; }
+        } else if (own[v] === -2) { own[v] = u; dOwn[v] = dOwn[u] + 1; next.push(v); }
+      }
+    }
+    return { next, best };
+  }
+
+  while (layerF.length && layerB.length) {
+    const fromStart = layerF.length <= layerB.length; // se expande el lado con la frontera mas pequena
+    const r = fromStart
+      ? expand(layerF, parF, distF, parB, distB, true)
+      : expand(layerB, parB, distB, parF, distF, false);
+    if (r.best) {
+      const path = pathTo(parF, r.best.a);
+      for (let c = r.best.c; c !== -1; c = parB[c]) path.push(c);
+      return finish(path);
+    }
+    if (fromStart) layerF = r.next; else layerB = r.next;
+  }
+  return fail(name, explored);
+}
+
+export const ALGORITHMS = { bfs, dfs, ucs, astar, bidirectional };
+export const ALGO_NAMES = { bfs: 'BFS', dfs: 'DFS', ucs: 'UCS', astar: 'A*', bidirectional: 'Bidireccional' };
