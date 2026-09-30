@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Laboratorio de rutas · BFS, DFS, UCS y A*</title>
+  <meta name="description" content="Tablero 20x20 para comparar BFS, DFS, UCS y A* sobre el mismo mapa.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%231f5fbf'/%3E%3Cpath d='M3 12V4h4v4h6' stroke='white' stroke-width='2' fill='none'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <a class="skip" href="#tablero">Saltar al tablero</a>
+
+  <header>
+    <h1>Laboratorio de rutas</h1>
+    <p>Busca el camino del inicio a una meta con BFS, DFS, UCS y A*. Movimiento en cuatro direcciones.</p>
+  </header>
+
+  <main>
+    <section class="panel" aria-labelledby="h-editar">
+      <h2 id="h-editar">1. Editar el tablero</h2>
+      <fieldset class="tools">
+        <legend>Herramienta</legend>
+        <label><input type="radio" name="tool" value="start"><span class="sw sw-start">S</span> Inicio</label>
+        <label><input type="radio" name="tool" value="goal"><span class="sw sw-goal">G</span> Meta</label>
+        <label><input type="radio" name="tool" value="wall" checked><span class="sw sw-wall"></span> Obstáculo</label>
+        <label><input type="radio" name="tool" value="weight"><span class="sw sw-weight">5</span> Peso</label>
+        <label><input type="radio" name="tool" value="erase"><span class="sw sw-erase"></span> Borrar</label>
+      </fieldset>
+      <div class="row">
+        <label>Peso de la baldosa (2-9) <input id="weight" type="number" min="2" max="9" value="5"></label>
+        <label>Penalización de la meta (≥ 0) <input id="pen" type="number" min="0" max="99" value="0"></label>
+        <button id="btn-clear" type="button">Vaciar tablero</button>
+      </div>
+      <div class="row">
+        <label>Escenario
+          <select id="scenario"></select>
+        </label>
+        <button id="btn-load" type="button">Cargar escenario</button>
+      </div>
+      <p id="scenario-info" class="hint" aria-live="polite"></p>
+    </section>
+
+    <section class="board-wrap" aria-labelledby="h-tablero">
+      <h2 id="h-tablero">Tablero 20 × 20</h2>
+      <div id="tablero" class="grid" role="grid" aria-label="Tablero 20 por 20. Usa las flechas para moverte y Enter o Espacio para aplicar la herramienta."></div>
+      <ul class="legend" aria-label="Leyenda">
+        <li><span class="sw sw-start">S</span> Inicio</li>
+        <li><span class="sw sw-goal">G</span> Meta (+penalización)</li>
+        <li><span class="sw sw-wall"></span> Obstáculo</li>
+        <li><span class="sw sw-weight">5</span> Peso</li>
+        <li><span class="sw sw-explored"></span> Explorada</li>
+        <li><span class="sw sw-path"></span> Ruta final</li>
+      </ul>
+    </section>
+
+    <section class="panel" aria-labelledby="h-ejecutar">
+      <h2 id="h-ejecutar">2. Ejecutar</h2>
+      <div class="row">
+        <label>Algoritmo
+          <select id="algo">
+            <option value="bfs">BFS (anchura)</option>
+            <option value="dfs">DFS (profundidad)</option>
+            <option value="ucs">UCS (coste uniforme)</option>
+            <option value="astar">A*</option>
+          </select>
+        </label>
+        <button id="btn-run" type="button" class="primary">Ejecutar</button>
+        <button id="btn-pause" type="button" disabled>Pausa</button>
+        <button id="btn-step" type="button" disabled>Paso</button>
+        <button id="btn-reset" type="button">Quitar resultado</button>
+      </div>
+      <div class="row">
+        <label>Velocidad <input id="speed" type="range" min="1" max="10" value="6"></label>
+      </div>
+
+      <dl class="metrics" aria-label="Métricas">
+        <div><dt>Exploradas</dt><dd id="m-explored">0</dd></div>
+        <div><dt>Pasos</dt><dd id="m-steps">–</dd></div>
+        <div><dt>Coste total</dt><dd id="m-cost">–</dd></div>
+      </dl>
+      <p id="status" class="status" role="status" aria-live="polite">Elige inicio y meta, o carga un escenario.</p>
+    </section>
+
+    <section class="panel" aria-labelledby="h-comparar">
+      <h2 id="h-comparar">3. Comparar los cuatro algoritmos</h2>
+      <button id="btn-compare" type="button" class="primary">Comparar en este mapa</button>
+      <div class="table-wrap">
+        <table id="compare" hidden>
+          <caption class="sr">Resultados de cada algoritmo sobre el mismo mapa</caption>
+          <thead><tr><th scope="col">Algoritmo</th><th scope="col">Pasos</th><th scope="col">Coste</th><th scope="col">Exploradas</th><th scope="col">Ver</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p id="compare-note" class="hint" aria-live="polite"></p>
+    </section>
+  </main>
+
+  <footer><p>Proyecto RA1 · PIA. HTML define la estructura, CSS los estilos y JavaScript la lógica.</p></footer>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
